@@ -1,0 +1,332 @@
+//Neji, Nguyen MP2I
+
+//Dimanche 26 Janvier
+
+//Objectif : Calculer un développement limité à l'ordre n en 0 de tangente
+
+//Version 3
+
+//To do:
+// - Plus grands entiers (l'ordre max est ~17)
+
+// - Amélioration complexité pour le calcul des coef ?
+
+
+///////////////////////////////Modules/////////////////////////////////
+
+
+
+#include<stdio.h>
+
+#include<math.h>
+
+#include<stdlib.h>
+
+#include<string.h>
+
+#include<assert.h>
+
+
+
+///////////////////////////////Structures/////////////////////////////////
+
+
+//structure pour former un rationnel
+typedef struct fraction{ 
+    uint num; //numérateur de la fraction 
+    uint denom; //dénominateur de la fraction
+}frac;
+
+///////////////////////////////Signatures/////////////////////////////////
+
+
+uint fact(uint n);
+
+void test_fact();
+uint** Remplit_coefb(int n);
+uint* Remplit_alpha_k(int n);
+void affiche_tab(uint* tab, int n);
+
+void test_coefb();
+frac* Remplit_coeftan(int n);
+void affiche_frac(frac* tab, int n);
+uint pgcd(uint a, uint b);
+void test_pgcd();
+void affiche_DL_tan(frac* coeftan, int n);
+
+
+////////////////////////////Variables globales////////////////////////
+
+
+uint** coefb; //coefb[n][k] --> k parmi n
+
+uint* alpha_k; //tableaux ds numerateurs des coefficients
+
+
+////////////////////////////Fonctions Main///////////////////////////////////
+
+
+
+int main() {
+    //fonctions test
+    test_pgcd();
+    test_fact();
+    
+    //Demande utilisateur
+    int n = 0;
+    printf("Quel ordre voulez-vous calculer ?\n");
+    scanf("%d", &n);
+    
+    coefb = Remplit_coefb(n); //Remplissage triangle de pascal
+    alpha_k = Remplit_alpha_k(n); //Calcul des alphas (numérateur coef)
+    frac* coeftan = Remplit_coeftan(n); // remplit un tableau des coefs
+    affiche_DL_tan(coeftan, n); // affichage du DL de tangente
+
+
+
+    return 0;
+
+}
+
+
+
+///////////////////////////////////Fonctions//////////////////////////////////
+
+
+
+//Calcule de la factorielle d'un entier n
+
+//Entrée : un entier
+
+//Preconditions : l'entier doit être positif ou nul
+
+//Sortie : la factorielle de l'entier
+
+
+
+uint fact(uint n) {
+
+    if(n==0) {
+
+        return 1;
+
+    }
+
+    if(n==1) {
+
+        return n;
+
+    }
+
+    else {
+
+        return n*fact(n-1);
+
+    }
+
+}
+
+
+//-------------------------------------------------
+
+//Fonction qui remplit un triangle de pascal
+//pour ensuite définir en variable global k parmi n
+
+
+uint** Remplit_coefb(int n) {
+
+    uint** TriangleP = malloc(n*sizeof(uint*));
+
+
+
+    for (int i=0; i<n; i++) {
+
+        TriangleP[i] = malloc((i + 1) * sizeof(uint));
+
+    }
+
+
+
+    TriangleP[0][0] = 1;
+
+    for (int i = 1; i < n; i++) {
+
+        TriangleP[i][0] = 1;
+
+        TriangleP[i][i] = 1;
+
+        for (int j = 1; j < i; j++) {
+
+            TriangleP[i][j] = TriangleP[i - 1][j - 1] + TriangleP[i - 1][j];
+
+        }
+
+    }
+
+
+
+    return TriangleP;
+
+}
+
+//----------------------------------------------
+
+//Fonction remplissant la variable global alpha
+//Entrée: un entier
+//Préconditions: l'entier eet positif
+//Sortie : les n alphas
+
+uint* Remplit_alpha_k(int n){
+    //Initialisation
+    uint* alpha = malloc(n*sizeof(uint));
+    for(int m = 2; m<n; m++){
+        alpha [m] = 0;
+    }
+    alpha[0] = 1;
+    alpha[1] = 1;
+    
+    //calcul des alphas
+    for(int i = 1; i<n; i++){
+        for(int j = 0; j< i+1 ; j++){
+            alpha[i+1] += coefb[i][j]*alpha[j]*alpha[i-j];
+        }
+        alpha[i+1] /= 2;
+    }
+    
+    
+    return alpha;
+
+}
+
+//-----------------------------------------------
+
+//Fonction affichant les alphas
+
+//Entrée : le tableau des alphas
+//Sortie : affichage des alphas
+
+void affiche_tab(uint* tab, int n){
+    for(int i = 0; i<n; i++){
+        printf("%d \n", tab[i]);
+    }
+}
+
+//-----------------------------------------------
+
+//Fonction qui remplit un tableau avec les coefficients du DL de tangente
+
+//Entrée : un entier n
+//Préconditions : un entier positif correspondant à l'ordre du DL
+//Sortie: un tableau avec les coef pour l'ordre n du DL de tangente
+
+
+frac* Remplit_coeftan(int n){
+    uint PGCD = 0;
+    uint factoriel = 0; // On calcule le factoriel et le pgcd séparément pour la complexité
+    frac* coeftan = malloc(n*sizeof(frac));
+    for (int i = 0; i<(n+1)/2; i++){
+        //Calcul du PGCD et de la factoriel
+        factoriel = fact(2*i+1);
+        PGCD = pgcd(alpha_k[2*i+1], factoriel);
+        //Division par le PGCD (fraction irréductible)
+        coeftan[i].num = ((alpha_k[2*i+1])/PGCD);
+        coeftan[i].denom = (factoriel/PGCD);
+    }
+    return coeftan;
+
+
+}
+
+//--------------------------------------------
+
+
+//Fonction affichant les fractions
+
+//Entrée : un tableau de fractions
+//Sortie : affichage des fractions 
+//Post conditions: Format (xxxx/xxxx)
+
+void affiche_frac(frac* tab, int n){
+    for(int i = 0; i<n; i++){
+        printf("%d/%d\n", tab[i].num, tab[i].denom);
+    }
+}
+
+
+//--------------------------------------------------
+
+//Fonction calculant le pgcd de 2 nombres
+
+// Entrée : 2 entiers
+// Préconditions : cette version prends que les positifs
+// Sortie : un entier
+// Post condition: il est le pgcd des 2 nombres en entré
+
+uint pgcd(uint a, uint b){
+    if(b==0){
+        return a;
+    }
+    else{
+    return pgcd(b, a%b);
+    }
+}
+
+
+void affiche_DL_tan(frac* coeftan, int n){
+    int deg = 1;
+    if(n>1){
+        printf("x + ");
+        if(n>2){
+            deg += 2;
+            for(int i = 1; i<(n+1)/2; i++){
+            printf("(%d/%d)x^%d + ", coeftan[i].num, coeftan[i].denom,deg);
+            deg += 2;
+            }
+        }    
+        printf("o(x^%d)", deg-2);
+           
+    }
+}
+
+
+
+
+///////////////////////////////////Fonctions test///////////////////////////////////
+
+
+
+void test_fact() {
+
+    assert(fact(0)==1);
+
+    assert(fact(1)==1);
+
+    assert(fact(2)==2);
+
+    assert(fact(3)==6);
+
+    assert(fact(4)==24);
+
+    assert(fact(5)==120);
+
+}
+
+void test_coefb(){
+    assert(coefb[4][0]==1);
+    assert(coefb[4][1]==4);
+    assert(coefb[4][2]==6);
+    assert(coefb[4][3]==4);
+    assert(coefb[4][4]==1);
+    assert(coefb[9][1]==9);
+}
+
+void test_pgcd(){
+    assert(pgcd(1,15) == 1);
+    assert(pgcd(6,9) == 3);
+    assert(pgcd(6,36) == 6);
+    assert(pgcd(42,42));
+    assert(pgcd(272,5040) == 16);
+    assert(pgcd(2,6)==2);
+}
+
+////////////////////////////////////////////////////////////////////////
